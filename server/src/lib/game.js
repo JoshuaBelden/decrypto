@@ -1,4 +1,4 @@
-import { success, fail } from "./lib/result.js"
+import { success, fail } from "./result.js"
 
 const GAME_PHASE = {
   LOBBY: "LOBBY",
@@ -49,7 +49,27 @@ const Game = gameId => {
       return fail("Player is already on the team.")
     }
 
+    // Remove the player from all teams and then re-add them to the correct team 
+    teams.forEach(team => {
+      team.playerIds = team.playerIds.filter(id => id !== playerId)
+    })
     team.playerIds.push(player.playerId)
+
+    return success()
+  }
+
+  const playerReady = (playerId, ready) => {
+    const player = players.find(player => player.playerId === playerId)
+    if (!player) {
+      return fail("Player is not in the game.")
+    }
+
+    const onTeam = teams.find(team => team.playerIds.some(id => id === playerId))
+    if (!onTeam) {
+      return fail("Player must be on a team to be ready.")
+    }
+
+    player.ready = ready
     return success()
   }
 
@@ -60,6 +80,7 @@ const Game = gameId => {
     teams,
     joinGame,
     joinTeam,
+    playerReady,
   }
 }
 

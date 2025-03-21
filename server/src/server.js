@@ -1,5 +1,5 @@
 import { WebSocketServer } from "ws"
-import handleRequest from "./request.js"
+import handleRequest from "./lib/request.js"
 
 const handleMessage = (message, socket, gameInstances) => {
   try {
