@@ -1,6 +1,7 @@
 import { success, fail } from "./result.js"
 
-const GAME_PHASE = {
+const MIN_PLAYERS = 4
+export const GAME_PHASE = {
   LOBBY: "LOBBY",
   STARTED: "STARTED",
   FINISHED: "FINISHED",
@@ -12,7 +13,9 @@ const Player = (playerId, playerName, socket) => {
 }
 
 const Game = gameId => {
-  const phase = GAME_PHASE.LOBBY
+  const state = {
+    phase: GAME_PHASE.LOBBY
+  }
   const players = []
   const teams = [
     {
@@ -45,7 +48,7 @@ const Game = gameId => {
       return fail(`Team ${teamName} does not exist.`)
     }
 
-    if (team.playerIds.some(playerId => playerId === playerId)) {
+    if (team.playerIds.some(id => id === playerId)) {
       return fail("Player is already on the team.")
     }
 
@@ -70,12 +73,17 @@ const Game = gameId => {
     }
 
     player.ready = ready
+
+    if (players.length >= MIN_PLAYERS && players.every(player => player.ready)) {
+      state.phase = GAME_PHASE.STARTED
+    }
+
     return success()
   }
 
   return {
     gameId,
-    phase,
+    state,
     players,
     teams,
     joinGame,

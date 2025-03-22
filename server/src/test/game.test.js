@@ -1,4 +1,4 @@
-import Game from "../lib/game.js"
+import Game, { GAME_PHASE } from "../lib/game.js"
 
 describe("Game", () => {
   describe("joinGame", () => {
@@ -145,7 +145,7 @@ describe("Game", () => {
       expect(result.success).toBe(false)
     })
 
-    it ("should not allow a player to ready if they're not on a team", () => {
+    it("should not allow a player to ready if they're not on a team", () => {
       // ARRANGE
       const game = Game("game1")
       const playerId = "player1"
@@ -158,6 +158,44 @@ describe("Game", () => {
 
       // ASSERT
       expect(result.success).toBe(false)
+    })
+
+    it("should advance the game phase when at least 4 players are all ready", () => {
+      // ARRANGE
+      const game = Game("game1")
+      const playerId1 = "player1"
+      const playerName1 = "Player One"
+      const socket1 = { send: jest.fn() }
+      game.joinGame(playerId1, playerName1, socket1)
+      game.joinTeam(playerId1, "White")
+
+      const playerId2 = "player2"
+      const playerName2 = "Player Two"
+      const socket2 = { send: jest.fn() }
+      game.joinGame(playerId2, playerName2, socket2)
+      game.joinTeam(playerId2, "White")
+
+      const playerId3 = "player3"
+      const playerName3 = "Player Three"
+      const socket3 = { send: jest.fn() }
+      game.joinGame(playerId3, playerName3, socket3)
+      game.joinTeam(playerId3, "Black")
+
+      const playerId4 = "player4"
+      const playerName4 = "Player Four"
+      const socket4 = { send: jest.fn() }
+      game.joinGame(playerId4, playerName4, socket4)
+      game.joinTeam(playerId4, "Black")
+
+      // ACT
+      game.playerReady(playerId1, true)
+      game.playerReady(playerId2, true)
+      game.playerReady(playerId3, true)
+      const result = game.playerReady(playerId4, true)
+
+      // ASSERT
+      expect(result.success).toBe(true)
+      expect(game.state.phase).toBe(GAME_PHASE.STARTED)
     })
   })
 })
