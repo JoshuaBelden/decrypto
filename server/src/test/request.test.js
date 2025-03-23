@@ -189,6 +189,36 @@ describe("handleRequest", () => {
     })
   })
 
+  describe("when submitting clues", () => {
+    it("should handle a submitClues request", () => {
+      // ARRANGE
+      const request = {
+        type: "submitClues",
+        gameId: "game1",
+        playerId: "player1",
+        playerName: "Player One",
+        clues: ["clue1", "clue2", "clue3"],
+      }
+      const socket = { send: jest.fn() }
+      const gameInstances = new Map()
+      const gameInstance = {
+        submitClues: jest.fn(() => ({ success: true })),
+      }
+      gameInstances.set("game1", gameInstance)
+
+      // ACT
+      handleRequest(request, socket, gameInstances)
+
+      // ASSERT
+      expect(gameInstance.submitClues).toHaveBeenCalledWith("player1", [
+        "clue1",
+        "clue2",
+        "clue3",
+      ])
+      expect(socket.send).not.toHaveBeenCalled()
+    })
+  })
+
   describe("when the request type is unknown", () => {
     it("should reply with an error", () => {
       // ARRANGE

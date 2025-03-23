@@ -5,6 +5,7 @@ const REQUEST_TYPE = {
   JOIN_GAME: "joinGame",
   JOIN_TEAM: "joinTeam",
   PLAYER_READY: "playerReady",
+  SUBMIT_CLUES: "submitClues",
 }
 
 const handleRequest = (request, socket, gameInstances) => {
@@ -26,6 +27,10 @@ const handleRequest = (request, socket, gameInstances) => {
     case REQUEST_TYPE.PLAYER_READY:
       const ready = requireField("ready", request, socket)
       result = gameInstance.playerReady(playerId, ready)
+      break
+    case REQUEST_TYPE.SUBMIT_CLUES:
+      const clues = requireField("clues", request, socket)
+      result = gameInstance.submitClues(playerId, clues)
       break
     default:
       result = fail(
