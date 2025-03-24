@@ -1,5 +1,42 @@
 import Game, { GAME_PHASE } from "../lib/game.js"
 
+const setup4PlayerGame = () => {
+  const game = Game("game1")
+
+  const playerId1 = "player1"
+  const playerName1 = "Player One"
+  const socket1 = { send: jest.fn() }
+
+  const playerId2 = "player2"
+  const playerName2 = "Player Two"
+  const socket2 = { send: jest.fn() }
+
+  const playerId3 = "player3"
+  const playerName3 = "Player Three"
+  const socket3 = { send: jest.fn() }
+
+  const playerId4 = "player4"
+  const playerName4 = "Player Four"
+  const socket4 = { send: jest.fn() }
+
+  game.joinGame(playerId1, playerName1, socket1)
+  game.joinGame(playerId2, playerName2, socket2)
+  game.joinGame(playerId3, playerName3, socket3)
+  game.joinGame(playerId4, playerName4, socket4)
+
+  game.joinTeam(playerId1, "White")
+  game.joinTeam(playerId2, "White")
+  game.joinTeam(playerId3, "Black")
+  game.joinTeam(playerId4, "Black")
+
+  game.playerReady(playerId1, true)
+  game.playerReady(playerId2, true)
+  game.playerReady(playerId3, true)
+  game.playerReady(playerId4, true)
+
+  return { game, playerId1, playerId2, playerId3, playerId4 }
+}
+
 describe("Game", () => {
   describe("joinGame", () => {
     it("should add a player to the game", () => {
@@ -163,7 +200,7 @@ describe("Game", () => {
 
   describe("transitionPhase", () => {
     describe("lobby to main_encrypt", () => {
-      it("lobby should transition to main_encrypt", () => {
+      it("should transition to main_encrypt", () => {
         // ARRANGE
         const game = Game("game1")
         const playerId1 = "player1"
@@ -201,76 +238,20 @@ describe("Game", () => {
         expect(game.state.phase).toBe(GAME_PHASE.MAIN_ENCRYPT)
       })
 
-      it("main_encrypt should have 4 keywords set per team", () => {
+      it("should have 4 keywords set per team", () => {
         // ARRANGE
-        const game = Game("game1")
-        const playerId1 = "player1"
-        const playerName1 = "Player One"
-        const socket1 = { send: jest.fn() }
-        game.joinGame(playerId1, playerName1, socket1)
-        game.joinTeam(playerId1, "White")
-
-        const playerId2 = "player2"
-        const playerName2 = "Player Two"
-        const socket2 = { send: jest.fn() }
-        game.joinGame(playerId2, playerName2, socket2)
-        game.joinTeam(playerId2, "White")
-
-        const playerId3 = "player3"
-        const playerName3 = "Player Three"
-        const socket3 = { send: jest.fn() }
-        game.joinGame(playerId3, playerName3, socket3)
-        game.joinTeam(playerId3, "Black")
-
-        const playerId4 = "player4"
-        const playerName4 = "Player Four"
-        const socket4 = { send: jest.fn() }
-        game.joinGame(playerId4, playerName4, socket4)
-        game.joinTeam(playerId4, "Black")
-
         // ACT
-        game.playerReady(playerId1, true)
-        game.playerReady(playerId2, true)
-        game.playerReady(playerId3, true)
-        game.playerReady(playerId4, true)
+        const { game } = setup4PlayerGame()
 
         // ASSERT
         expect(game.teams[0].keywords).toHaveLength(4)
         expect(game.teams[1].keywords).toHaveLength(4)
       })
 
-      it("main_encrypt should choose 1 encryptor from each team", () => {
+      it("should choose 1 encryptor from each team", () => {
         // ARRANGE
-        const game = Game("game1")
-        const playerId1 = "player1"
-        const playerName1 = "Player One"
-        const socket1 = { send: jest.fn() }
-        game.joinGame(playerId1, playerName1, socket1)
-        game.joinTeam(playerId1, "White")
-
-        const playerId2 = "player2"
-        const playerName2 = "Player Two"
-        const socket2 = { send: jest.fn() }
-        game.joinGame(playerId2, playerName2, socket2)
-        game.joinTeam(playerId2, "White")
-
-        const playerId3 = "player3"
-        const playerName3 = "Player Three"
-        const socket3 = { send: jest.fn() }
-        game.joinGame(playerId3, playerName3, socket3)
-        game.joinTeam(playerId3, "Black")
-
-        const playerId4 = "player4"
-        const playerName4 = "Player Four"
-        const socket4 = { send: jest.fn() }
-        game.joinGame(playerId4, playerName4, socket4)
-        game.joinTeam(playerId4, "Black")
-
         // ACT
-        game.playerReady(playerId1, true)
-        game.playerReady(playerId2, true)
-        game.playerReady(playerId3, true)
-        game.playerReady(playerId4, true)
+        const { game } = setup4PlayerGame()
 
         // ASSERT
         expect(game.teams[0].currentEncryptorId).not.toBeNull()
@@ -278,38 +259,10 @@ describe("Game", () => {
       })
     })
 
-    describe("main_encrypt to main_decode", () => {
-      it("main_encrypt should transition to main_decode", () => {
+    describe("main_encrypt to main_intercept", () => {
+      it("should transition to main_intercept", () => {
         // ARRANGE
-        const game = Game("game1")
-        const playerId1 = "player1"
-        const playerName1 = "Player One"
-        const socket1 = { send: jest.fn() }
-        game.joinGame(playerId1, playerName1, socket1)
-        game.joinTeam(playerId1, "White")
-
-        const playerId2 = "player2"
-        const playerName2 = "Player Two"
-        const socket2 = { send: jest.fn() }
-        game.joinGame(playerId2, playerName2, socket2)
-        game.joinTeam(playerId2, "White")
-
-        const playerId3 = "player3"
-        const playerName3 = "Player Three"
-        const socket3 = { send: jest.fn() }
-        game.joinGame(playerId3, playerName3, socket3)
-        game.joinTeam(playerId3, "Black")
-
-        const playerId4 = "player4"
-        const playerName4 = "Player Four"
-        const socket4 = { send: jest.fn() }
-        game.joinGame(playerId4, playerName4, socket4)
-        game.joinTeam(playerId4, "Black")
-
-        game.playerReady(playerId1, true)
-        game.playerReady(playerId2, true)
-        game.playerReady(playerId3, true)
-        game.playerReady(playerId4, true)
+        const { game } = setup4PlayerGame()
 
         // ACT
         const whiteTeamEncryptorPlayer = game.players.find(
@@ -329,6 +282,41 @@ describe("Game", () => {
           "elephant",
           "frog",
         ])
+
+        // ASSERT
+        expect(game.state.phase).toBe(GAME_PHASE.MAIN_INTERCEPT)
+      })
+    })
+
+    describe("main_intercept to main_decode", () => {
+      it("should transition to main_decode", () => {
+        // ARRANGE
+        const { game, playerId1, playerId2, playerId3, playerId4 } =
+          setup4PlayerGame()
+
+        const whiteTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[0].currentEncryptorId
+        )
+        game.submitClues(whiteTeamEncryptorPlayer.playerId, [
+          "apple",
+          "banana",
+          "carrot",
+        ])
+
+        const blackTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[1].currentEncryptorId
+        )
+        game.submitClues(blackTeamEncryptorPlayer.playerId, [
+          "dog",
+          "elephant",
+          "frog",
+        ])
+
+        // ACT
+        const team1 = game.teams[0]
+        const team2 = game.teams[1]
+        game.submitInterceptGuess(team1.name, [1, 2, 3])
+        game.submitInterceptGuess(team2.name, [3, 1, 2])
 
         // ASSERT
         expect(game.state.phase).toBe(GAME_PHASE.MAIN_DECODE)
@@ -336,37 +324,10 @@ describe("Game", () => {
     })
 
     describe("main_decode to main_reveal", () => {
-      it("main_decode should transition to main_reveal", () => {
+      it("should transition to main_reveal", () => {
         // ARRANGE
-        const game = Game("game1")
-        const playerId1 = "player1"
-        const playerName1 = "Player One"
-        const socket1 = { send: jest.fn() }
-        game.joinGame(playerId1, playerName1, socket1)
-        game.joinTeam(playerId1, "White")
-
-        const playerId2 = "player2"
-        const playerName2 = "Player Two"
-        const socket2 = { send: jest.fn() }
-        game.joinGame(playerId2, playerName2, socket2)
-        game.joinTeam(playerId2, "White")
-
-        const playerId3 = "player3"
-        const playerName3 = "Player Three"
-        const socket3 = { send: jest.fn() }
-        game.joinGame(playerId3, playerName3, socket3)
-        game.joinTeam(playerId3, "Black")
-
-        const playerId4 = "player4"
-        const playerName4 = "Player Four"
-        const socket4 = { send: jest.fn() }
-        game.joinGame(playerId4, playerName4, socket4)
-        game.joinTeam(playerId4, "Black")
-
-        game.playerReady(playerId1, true)
-        game.playerReady(playerId2, true)
-        game.playerReady(playerId3, true)
-        game.playerReady(playerId4, true)
+        const { game, playerId1, playerId2, playerId3, playerId4 } =
+          setup4PlayerGame()
 
         const whiteTeamEncryptorPlayer = game.players.find(
           player => player.playerId === game.teams[0].currentEncryptorId
@@ -386,14 +347,94 @@ describe("Game", () => {
           "frog",
         ])
 
+        const team1 = game.teams[0]
+        const team2 = game.teams[1]
+        game.submitInterceptGuess(team1.name, [1, 2, 3])
+        game.submitInterceptGuess(team2.name, [3, 1, 2])
+
         // ACT
-        game.submitGuess(playerId1, [1, 2, 3])
-        game.submitGuess(playerId2, [3, 1, 2])
-        game.submitGuess(playerId3, [1, 2, 3])
-        game.submitGuess(playerId4, [1, 3, 2])
+        game.submitDecodeGuess(team1.name, [1, 2, 3])
+        game.submitDecodeGuess(team2.name, [3, 1, 2])
 
         // ASSERT
         expect(game.state.phase).toBe(GAME_PHASE.MAIN_REVEAL)
+      })
+    })
+
+    describe("main_reveal to main_encrypt", () => {
+      it("should transition to main_encrypt", () => {
+        // ARRANGE
+        const { game, playerId1, playerId2, playerId3, playerId4 } =
+          setup4PlayerGame()
+
+        const whiteTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[0].currentEncryptorId
+        )
+        game.submitClues(whiteTeamEncryptorPlayer.playerId, [
+          "apple",
+          "banana",
+          "carrot",
+        ])
+
+        const blackTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[1].currentEncryptorId
+        )
+        game.submitClues(blackTeamEncryptorPlayer.playerId, [
+          "dog",
+          "elephant",
+          "frog",
+        ])
+
+        const team1 = game.teams[0]
+        const team2 = game.teams[1]
+        game.submitInterceptGuess(team1.name, [1, 2, 3])
+        game.submitInterceptGuess(team2.name, [3, 1, 2])
+        game.submitDecodeGuess(team1.name, [1, 2, 3])
+        game.submitDecodeGuess(team2.name, [3, 1, 2])
+
+        // ACT
+        game.submitReadyForNextRound(playerId1)
+        game.submitReadyForNextRound(playerId2)
+        game.submitReadyForNextRound(playerId3)
+        game.submitReadyForNextRound(playerId4)
+
+        // ASSERT
+        expect(game.state.phase).toBe(GAME_PHASE.MAIN_ENCRYPT)
+      })
+
+      it("should increment the round", () => {
+        // ARRANGE
+        const { game, playerId1, playerId2, playerId3, playerId4 } =
+          setup4PlayerGame()
+
+        const whiteTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[0].currentEncryptorId
+        )
+        game.submitClues(whiteTeamEncryptorPlayer.playerId, [
+          "apple",
+          "banana",
+          "carrot",
+        ])
+
+        const blackTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[1].currentEncryptorId
+        )
+        game.submitClues(blackTeamEncryptorPlayer.playerId, [
+          "dog",
+          "elephant",
+          "frog",
+        ])
+
+        const team1 = game.teams[0]
+        const team2 = game.teams[1]
+        game.submitInterceptGuess(team1.name, [1, 2, 3])
+        game.submitInterceptGuess(team2.name, [3, 1, 2])
+        game.submitDecodeGuess(team1.name, [1, 2, 3])
+        game.submitDecodeGuess(team2.name, [3, 1, 2])
+
+        // ACT
+
+        // ASSERT
       })
     })
   })
