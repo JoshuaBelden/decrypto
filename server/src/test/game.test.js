@@ -278,8 +278,8 @@ describe("Game", () => {
       })
     })
 
-    describe("main_encrypt to main_white", () => {
-      it("main_encrypt should transition to main_white", () => {
+    describe("main_encrypt to main_decode", () => {
+      it("main_encrypt should transition to main_decode", () => {
         // ARRANGE
         const game = Game("game1")
         const playerId1 = "player1"
@@ -310,16 +310,90 @@ describe("Game", () => {
         game.playerReady(playerId2, true)
         game.playerReady(playerId3, true)
         game.playerReady(playerId4, true)
-        
-        // ACT
-        const whiteTeamEncryptorPlayer = game.players.find(player => player.playerId === game.teams[0].currentEncryptorId)
-        game.submitClues(whiteTeamEncryptorPlayer.playerId, ["apple", "banana", "carrot"])
 
-        const blackTeamEncryptorPlayer = game.players.find(player => player.playerId === game.teams[1].currentEncryptorId)
-        game.submitClues(blackTeamEncryptorPlayer.playerId, ["dog", "elephant", "frog"])
+        // ACT
+        const whiteTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[0].currentEncryptorId
+        )
+        game.submitClues(whiteTeamEncryptorPlayer.playerId, [
+          "apple",
+          "banana",
+          "carrot",
+        ])
+
+        const blackTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[1].currentEncryptorId
+        )
+        game.submitClues(blackTeamEncryptorPlayer.playerId, [
+          "dog",
+          "elephant",
+          "frog",
+        ])
 
         // ASSERT
-        expect(game.state.phase).toBe(GAME_PHASE.MAIN_WHITE)
+        expect(game.state.phase).toBe(GAME_PHASE.MAIN_DECODE)
+      })
+    })
+
+    describe("main_decode to main_reveal", () => {
+      it("main_decode should transition to main_reveal", () => {
+        // ARRANGE
+        const game = Game("game1")
+        const playerId1 = "player1"
+        const playerName1 = "Player One"
+        const socket1 = { send: jest.fn() }
+        game.joinGame(playerId1, playerName1, socket1)
+        game.joinTeam(playerId1, "White")
+
+        const playerId2 = "player2"
+        const playerName2 = "Player Two"
+        const socket2 = { send: jest.fn() }
+        game.joinGame(playerId2, playerName2, socket2)
+        game.joinTeam(playerId2, "White")
+
+        const playerId3 = "player3"
+        const playerName3 = "Player Three"
+        const socket3 = { send: jest.fn() }
+        game.joinGame(playerId3, playerName3, socket3)
+        game.joinTeam(playerId3, "Black")
+
+        const playerId4 = "player4"
+        const playerName4 = "Player Four"
+        const socket4 = { send: jest.fn() }
+        game.joinGame(playerId4, playerName4, socket4)
+        game.joinTeam(playerId4, "Black")
+
+        game.playerReady(playerId1, true)
+        game.playerReady(playerId2, true)
+        game.playerReady(playerId3, true)
+        game.playerReady(playerId4, true)
+
+        const whiteTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[0].currentEncryptorId
+        )
+        game.submitClues(whiteTeamEncryptorPlayer.playerId, [
+          "apple",
+          "banana",
+          "carrot",
+        ])
+
+        const blackTeamEncryptorPlayer = game.players.find(
+          player => player.playerId === game.teams[1].currentEncryptorId
+        )
+        game.submitClues(blackTeamEncryptorPlayer.playerId, [
+          "dog",
+          "elephant",
+          "frog",
+        ])
+
+        // ACT
+        game.submitGuess(playerId1, [1, 2, 3])
+        game.submitGuess(playerId2, [3, 1, 2])
+        game.submitGuess(playerId3, [1, 2, 3])
+        game.submitGuess(playerId4, [1, 3, 2])
+
+        // ASSERT
+        expect(game.state.phase).toBe(GAME_PHASE.MAIN_REVEAL)
       })
     })
   })

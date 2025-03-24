@@ -12,23 +12,16 @@ export const GAME_PHASE = {
   // Each clue relates to the codes they received.
   MAIN_ENCRYPT: "MAIN_ENCRYPT",
 
-  // All teams have have received the white team's encryptor's clues.
+  // All teams have have received all encryptor's clues.
   // The black team is trying to guess the white team's codes.
   // The white team is trying to decode the white team's encrytor's clues.
-  MAIN_WHITE_DECODE: "MAIN_WHITE",
+  MAIN_DECODE: "MAIN_DECODE",
 
-  // The white team reveals the actual code and we decide if the black team
-  // intercepted the code and if the white team decoded the clues.
-  MAIN_WHITE_REVEAL: "MAIN_WHITE_REVEAL",
+  // All guesses have been submitted.
+  // Test first the white team, intercepts then successful guesses
+  // Then the black team, intercepts then successful guesses
+  MAIN_REVEAL: "MAIN_REVEAL",
 
-  // The white team has received the black team's encryptor's clues.
-  // The white team is trying to guess the black team's codes.
-  // The black team is trying to decode the black team's encrytor's clues.
-  MAIN_BLACK_DECODE: "MAIN_BLACK_DECODE",
-
-  // The black team reveals the actual code and we decide if the white team
-  // intercepted the code and if the black team decoded the clues.
-  MAIN_BLACK_REVEAL: "MAIN_BLACK_REVEAL",
   OVER: "OVER",
 }
 
@@ -78,7 +71,12 @@ const Game = gameId => {
   }
   const players = []
   const teams = [Team("White"), Team("Black")]
+
   const transitionPhase = () => {
+    const round = state.rounds.find(
+      round => round.roundId === state.currentRound
+    )
+
     switch (state.phase) {
       case GAME_PHASE.LOBBY:
         if (
@@ -92,14 +90,19 @@ const Game = gameId => {
         }
         break
       case GAME_PHASE.MAIN_ENCRYPT:
-        const round = state.rounds.find(
-          round => round.roundId === state.currentRound
-        )
         if (
           round.teamClues.White.length === 3 &&
           round.teamClues.Black.length === 3
         ) {
-          state.phase = GAME_PHASE.MAIN_WHITE
+          state.phase = GAME_PHASE.MAIN_DECODE
+        }
+        break
+      case GAME_PHASE.MAIN_DECODE:
+        if (
+          round.teamGuesses.White.length === 3 &&
+          round.teamGuesses.Black.length === 3
+        ) {
+          state.phase = GAME_PHASE.MAIN_REVEAL
         }
         break
     }
@@ -218,6 +221,32 @@ const Game = gameId => {
     return success()
   }
 
+  // MAIN_WHITE_REVEAL METHODS
+  const submitGuess = (playerId, guess) => {
+    const player = players.find(player => player.playerId === playerId)
+    if (!player) {
+      return fail("Player is not in the game.")
+    }
+
+    const team = teams.find(team => team.playerIds.some(id => id === playerId))
+    if (!team) {
+      return fail("Player must be on a team to submit a guess.")
+    }
+
+    if (team.currentEncryptorId === playerId) {
+      return fail("Player is the current encryptor and cannot submit a guess.")
+    }
+
+    const round = state.rounds.find(
+      round => round.roundId === state.currentRound
+    )
+    round.teamGuesses[team.name] = [...guess]
+
+    transitionPhase()
+
+    return success()
+  }
+
   return {
     gameId,
     state,
@@ -227,6 +256,7 @@ const Game = gameId => {
     joinTeam,
     playerReady,
     submitClues,
+    submitGuess,
   }
 }
 
