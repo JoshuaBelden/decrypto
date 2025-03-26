@@ -1,31 +1,9 @@
 import { arraysAreEqual } from "./utils.js"
+import { GAME_PHASE } from "./constants.js"
 import { keywords } from "../data/keywords.js"
 const MIN_PLAYERS = 4
 
-export const GAME_PHASE = {
-  // Players are joining the game and selecting teams
-  LOBBY: "LOBBY",
-
-  // Players have joined teams, teams have received their 4 keywords and encryptors have been selected.
-  // Encryptors now need to submit their clues.
-  MAIN_ENCRYPT: "MAIN_ENCRYPT",
-
-  // Encryptors have submitted their clues.
-  // Players now need to intercept the other team's clues by submitting guesses.
-  MAIN_INTERCEPT: "MAIN_INTERCEPT",
-
-  // Players have submitted their intercepts.
-  // Players now need to decode their encryptor's clues.
-  MAIN_DECODE: "MAIN_DECODE",
-
-  // All guesses have been submitted.
-  // Time to determine the score for the round.
-  MAIN_REVEAL: "MAIN_REVEAL",
-
-  OVER: "OVER",
-}
-
-const PhaseManager = (roundManager) => {
+const PhaseManager = roundManager => {
   let _currentPhase = GAME_PHASE.LOBBY
 
   const setKeywords = teams => {
@@ -126,7 +104,7 @@ const PhaseManager = (roundManager) => {
       currentRound.teamInterceptGuesses.Black,
       currentRound.teamCodes.White
     )
-    
+
     const balckMiscommunicated = !arraysAreEqual(
       currentRound.teamDecodeGuesses.Black,
       currentRound.teamCodes.Black

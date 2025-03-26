@@ -1,5 +1,5 @@
 import { WebSocketServer } from "ws"
-import handleRequest from "./lib/request.js"
+import handleRequest from "./lib/handleRequest.js"
 
 const handleMessage = (message, socket, gameInstances) => {
   try {
@@ -10,15 +10,9 @@ const handleMessage = (message, socket, gameInstances) => {
   }
 }
 
-const handleClose = (socket, players) => {
-  try {
-    if (!players.size) return
-
-    const player = Array.from(players).find(([key, value]) => value === socket)
-    players.delete(player[0])
-  } catch (error) {
-    console.error(`Socket close error: ${error}`)
-  }
+const handleClose = (socket) => {
+  // Remove player from game
+  console.log("Client disconnected")
 }
 
 const handleError = error => {
@@ -34,7 +28,7 @@ server.on("connection", socket => {
   socket.on("message", message =>
     handleMessage(message, socket, gameInstances)
   )
-  socket.on("close", () => handleClose(socket, players))
+  socket.on("close", () => handleClose(socket))
   socket.on("error", handleError)
 })
 

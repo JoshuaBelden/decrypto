@@ -1,4 +1,5 @@
-import PhaseManager, {GAME_PHASE } from '../lib/phaseManager.js'
+import { GAME_PHASE } from '../lib/constants.js'
+import PhaseManager from '../lib/phaseManager.js'
 import RoundManager from "../lib/roundManager.js"
 
 describe("PhaseManager", () => {

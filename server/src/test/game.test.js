@@ -1,5 +1,6 @@
+import { GAME_PHASE } from '../lib/constants.js'
 import Game from "../lib/game.js"
-import PhaseManager, { GAME_PHASE } from "../lib/phaseManager.js"
+import PhaseManager from "../lib/phaseManager.js"
 import RoundManager from "../lib/roundManager.js"
 
 const setupBasicGame = () => {
@@ -68,20 +69,22 @@ describe("Game", () => {
       expect(game.players[0].playerName).toBe(playerName)
     })
 
-    it("should not add a player to the game if they are already in the game", () => {
+    it("should re-add a player to the game when they re-join", () => {
       // ARRANGE
       const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
-      const socket = { send: jest.fn() }
-      game.joinGame(playerId, playerName, socket)
+      const socket1 = { send: jest.fn() }
+      game.joinGame(playerId, playerName, socket1)
 
       // ACT
-      const result = game.joinGame(playerId, playerName, socket)
+      const socket2 = { send: jest.fn() }
+      const result = game.joinGame(playerId, playerName, socket2)
 
       // ASSERT
-      expect(result.success).toBe(false)
+      expect(result.success).toBe(true)
       expect(game.players).toHaveLength(1)
+      expect(game.players[0].socket).toBe(socket2)
     })
   })
 
@@ -162,6 +165,22 @@ describe("Game", () => {
       expect(game.teams[0].playerIds).not.toContain(playerId)
       expect(game.teams[1].playerIds).toContain(playerId)
     })
+  })
+
+  describe("addBots", () => {
+    it("should add bots to the game", () => {
+      // ARRANGE
+      const { game } = setupBasicGame()
+
+      // ACT
+      const result = game.addBots()
+
+      // ASSERT
+      expect(result.success).toBe(true)
+      expect(game.players).toHaveLength(4)
+      expect(game.teams.every(team => team.playerIds.length === 2)).toBe(true)
+      expect(game.players.every(player => player.ready === true)).toBe(true)
+    });
   })
 
   describe("playerReady", () => {

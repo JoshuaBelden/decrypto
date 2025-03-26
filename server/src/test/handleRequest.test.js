@@ -1,4 +1,5 @@
-import handleRequest, { REQUEST_TYPE } from "../lib/handleRequest.js"
+import { REQUEST_TYPE } from "../lib/constants.js"
+import handleRequest from "../lib/handleRequest.js"
 
 describe("handleRequest", () => {
   describe("when joining a game", () => {
@@ -138,6 +139,31 @@ describe("handleRequest", () => {
           error: "Missing required field: teamName",
         })
       )
+    })
+  })
+
+  describe("when adding bots", () => {
+    it("should handle an addBots request", () => {
+      // ARRANGE
+      const request = {
+        type: REQUEST_TYPE.ADD_BOTS,
+        gameId: "game1",
+        playerId: "player1",
+        playerName: "Player One",
+      }
+      const socket = { send: jest.fn() }
+      const gameInstances = new Map()
+      const gameInstance = {
+        addBots: jest.fn(() => ({ success: true })),
+      }
+      gameInstances.set("game1", gameInstance)
+
+      // ACT
+      handleRequest(request, socket, gameInstances)
+
+      // ASSERT
+      expect(gameInstance.addBots).toHaveBeenCalled()
+      expect(socket.send).not.toHaveBeenCalled()
     })
   })
 

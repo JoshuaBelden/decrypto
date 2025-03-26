@@ -1,17 +1,8 @@
+import { REQUEST_TYPE } from "./constants.js"
+import { fail } from "./result.js"
 import RoundManager from "./roundManager.js"
 import PhaseManager from "./phaseManager.js"
 import Game from "./game.js"
-import { fail } from "./result.js"
-
-export const REQUEST_TYPE = {
-  JOIN_GAME: "joinGame",
-  JOIN_TEAM: "joinTeam",
-  PLAYER_READY: "playerReady",
-  SUBMIT_CLUES: "submitClues",
-  SUBMIT_INTERCEPT_GUESS: "submitInterceptGuess",
-  SUBMIT_DECODE_GUESS: "submitDecodeGuess",
-  SUBMIT_READY_FOR_NEXT_ROUND: "submitReadyForNextRound",
-}
 
 const handleRequest = (request, socket, gameInstances) => {
   const gameId = requireField("gameId", request, socket)
@@ -19,21 +10,23 @@ const handleRequest = (request, socket, gameInstances) => {
 
   const playerId = requireField("playerId", request, socket)
   if (!playerId) return
-  
-  const playerName = requireField("playerName", request, socket)
-  if (!playerName) return
-  
+
   const gameInstance = createGameInstance(gameInstances, gameId)
 
   let result
 
   switch (request?.type) {
     case REQUEST_TYPE.JOIN_GAME:
+      const playerName = requireField("playerName", request, socket)
+      if (!playerName) return
       result = gameInstance.joinGame(playerId, playerName, socket)
       break
     case REQUEST_TYPE.JOIN_TEAM:
       const teamName = requireField("teamName", request, socket)
       result = gameInstance.joinTeam(playerId, teamName)
+      break
+    case REQUEST_TYPE.ADD_BOTS:
+      result = gameInstance.addBots();
       break
     case REQUEST_TYPE.PLAYER_READY:
       const ready = requireField("ready", request, socket)
@@ -79,7 +72,8 @@ const createGameInstance = (gameInstances, gameId) => {
 
   const roundManager = RoundManager()
   const phaseManager = PhaseManager(roundManager)
-  const gameInstance = Game(gameId, roundManager, phaseManager)
+  const gameInstance = Game(gameId, phaseManager, roundManager)
+
   gameInstances.set(gameId, gameInstance)
   return gameInstance
 }
@@ -92,7 +86,7 @@ const requireField = (field, request, socket) => {
 const broadcastGameUpdate = gameInstance => {
   if (!gameInstance?.players?.length) return
 
-  gameInstance.players.forEach(player => {
+  gameInstance.players.filter(player => !!player.socket).forEach(player => {
     player.socket.send(
       JSON.stringify({
         gameInstance: {
@@ -101,6 +95,10 @@ const broadcastGameUpdate = gameInstance => {
             ...player,
             socket: undefined,
           })),
+          currentPhase: gameInstance.phaseManager.currentPhase(),
+          currentRound: gameInstance.roundManager.currentRound(),
+          phaseManager: undefined,
+          roundManager: undefined,
         },
       })
     )

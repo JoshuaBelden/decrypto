@@ -1,10 +1,9 @@
 import { success, fail } from "./result.js"
 import { keywords } from "../data/keywords.js"
 
-const Player = (playerId, playerName, socket) => {
+const Player = (playerId, playerName, socket, isBot = false) => {
   if (!playerId) throw new Error("Player requires a player ID.")
   if (!playerName) throw new Error("Player requires a player name.")
-  if (!socket) throw new Error("Player requires a socket.")
 
   const ready = false
   return { playerId, playerName, ready, socket }
@@ -38,7 +37,10 @@ const Game = (gameId, phaseManager, roundManager) => {
 
   const joinGame = (playerId, playerName, socket) => {
     if (players.some(player => player.playerId === playerId)) {
-      return fail("Player is already in the game.")
+      const player = players.find(player => player.playerId === playerId)
+      player.playerName = playerName
+      player.socket = socket
+      return success()
     }
 
     players.push(Player(playerId, playerName, socket))
@@ -65,6 +67,24 @@ const Game = (gameId, phaseManager, roundManager) => {
       team.playerIds = team.playerIds.filter(id => id !== playerId)
     })
     team.playerIds.push(player.playerId)
+
+    return success()
+  }
+
+  const addBots = () => {
+    const botIds = ["bot1", "bot2", "bot3", "bot4"]
+    const botNames = ["Alice", "Bob", "Charlie", "David"]
+
+    botIds.forEach((botId, index) => {
+      if (players.find(player => player.playerId === botId)) {
+        return
+      }
+
+      const bot = Player(botId, botNames[index], null, true)
+      bot.ready = true
+      players.push(bot)
+      joinTeam(botId, index % 2 === 0 ? "White" : "Black")
+    })
 
     return success()
   }
@@ -159,11 +179,14 @@ const Game = (gameId, phaseManager, roundManager) => {
     teams,
     joinGame,
     joinTeam,
+    addBots,
     playerReady,
     submitClues,
     submitInterceptGuess,
     submitDecodeGuess,
     submitReadyForNextRound,
+    phaseManager,
+    roundManager,
   }
 }
 
