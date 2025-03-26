@@ -1,36 +1,18 @@
 import { success, fail } from "./result.js"
 import { keywords } from "../data/keywords.js"
 
-const MIN_PLAYERS = 4
-export const GAME_PHASE = {
-  // Players are joining the game and selecting teams
-  LOBBY: "LOBBY",
-
-  // Players have joined teams, teams have received their 4 keywords and encryptors have been selected.
-  // Encryptors now need to submit their clues.
-  MAIN_ENCRYPT: "MAIN_ENCRYPT",
-
-  // Encryptors have submitted their clues.
-  // Players now need to intercept the other team's clues by submitting guesses.
-  MAIN_INTERCEPT: "MAIN_INTERCEPT",
-
-  // Players have submitted their intercepts.
-  // Players now need to decode their encryptor's clues.
-  MAIN_DECODE: "MAIN_DECODE",
-
-  // All guesses have been submitted.
-  // Time to determine the score for the round.
-  MAIN_REVEAL: "MAIN_REVEAL",
-
-  OVER: "OVER",
-}
-
 const Player = (playerId, playerName, socket) => {
+  if (!playerId) throw new Error("Player requires a player ID.")
+  if (!playerName) throw new Error("Player requires a player name.")
+  if (!socket) throw new Error("Player requires a socket.")
+
   const ready = false
   return { playerId, playerName, ready, socket }
 }
 
 const Team = name => {
+  if (!name) throw new Error("Team requires a name.")
+
   const playerIds = []
   const keywords = []
   const currentEncryptorId = null
@@ -46,117 +28,13 @@ const Team = name => {
   }
 }
 
-const Round = roundId => {
-  const teamCodes = {
-    White: [
-      Math.floor(Math.random() * 4) + 1,
-      Math.floor(Math.random() * 4) + 1,
-      Math.floor(Math.random() * 4) + 1,
-    ],
-    Black: [
-      Math.floor(Math.random() * 4) + 1,
-      Math.floor(Math.random() * 4) + 1,
-      Math.floor(Math.random() * 4) + 1,
-    ],
-  }
+const Game = (gameId, phaseManager, roundManager) => {
+  if (!gameId) throw new Error("Game requires a game ID.")
+  if (!phaseManager) throw new Error("Game requires a phase manager.")
+  if (!roundManager) throw new Error("Game requires a round manager.")
 
-  const teamClues = {
-    White: [],
-    Black: [],
-  }
-
-  const teamInterceptGuesses = {
-    White: [],
-    Black: [],
-  }
-
-  const teamDecodeGuesses = {
-    White: [],
-    Black: [],
-  }
-
-  const teamPlayersReadyForNextRound = {
-    White: [],
-    Black: [],
-  }
-
-  return {
-    roundId,
-    teamCodes,
-    teamClues,
-    teamInterceptGuesses,
-    teamDecodeGuesses,
-    teamPlayersReadyForNextRound,
-  }
-}
-
-const Game = gameId => {
-  const state = {
-    phase: GAME_PHASE.LOBBY,
-    currentRound: 0,
-    rounds: [],
-  }
   const players = []
   const teams = [Team("White"), Team("Black")]
-
-  const transitionPhase = () => {
-    const round = state.rounds.find(
-      round => round.roundId === state.currentRound
-    )
-
-    switch (state.phase) {
-      case GAME_PHASE.LOBBY:
-        if (
-          players.length >= MIN_PLAYERS &&
-          players.every(player => player.ready)
-        ) {
-          setKeywords()
-          setNextEncryptors()
-          setNewRound()
-          state.phase = GAME_PHASE.MAIN_ENCRYPT
-        }
-        break
-      case GAME_PHASE.MAIN_ENCRYPT:
-        if (
-          round.teamClues.White.length === 3 &&
-          round.teamClues.Black.length === 3
-        ) {
-          state.phase = GAME_PHASE.MAIN_INTERCEPT
-        }
-        break
-      case GAME_PHASE.MAIN_INTERCEPT:
-        if (
-          round.teamInterceptGuesses.White.length === 3 &&
-          round.teamInterceptGuesses.Black.length === 3
-        ) {
-          state.phase = GAME_PHASE.MAIN_DECODE
-        }
-        break
-      case GAME_PHASE.MAIN_DECODE:
-        if (
-          round.teamDecodeGuesses.White.length === 3 &&
-          round.teamDecodeGuesses.Black.length === 3
-        ) {
-          const gameOver = determineScore()
-          if (gameOver) {
-            state.phase = GAME_PHASE.OVER
-          } else {
-            setNextEncryptors()
-            setNewRound()
-            state.phase = GAME_PHASE.MAIN_REVEAL
-          }
-        }
-        break
-      case GAME_PHASE.MAIN_REVEAL:
-        if (
-          round.teamPlayersReadyForNextRound.White.every(Boolean) &&
-          round.teamPlayersReadyForNextRound.Black.every(Boolean)
-        ) {
-          state.phase = GAME_PHASE.MAIN_ENCRYPT
-        }
-        break
-    }
-  }
 
   const joinGame = (playerId, playerName, socket) => {
     if (players.some(player => player.playerId === playerId)) {
@@ -206,39 +84,9 @@ const Game = gameId => {
 
     player.ready = ready
 
-    transitionPhase()
+    phaseManager.transition(players, teams)
 
     return success()
-  }
-
-  const setKeywords = () => {
-    const whiteTeam = teams.find(team => team.name === "White")
-    const blackTeam = teams.find(team => team.name === "Black")
-
-    whiteTeam.keywords = []
-    blackTeam.keywords = []
-
-    for (let i = 0; i < 4; i++) {
-      whiteTeam.keywords.push(
-        keywords.splice(Math.floor(Math.random() * keywords.length), 1)[0]
-      )
-      blackTeam.keywords.push(
-        keywords.splice(Math.floor(Math.random() * keywords.length), 1)[0]
-      )
-    }
-  }
-
-  const setNextEncryptors = () => {
-    const whiteTeam = teams.find(team => team.name === "White")
-    const blackTeam = teams.find(team => team.name === "Black")
-
-    whiteTeam.currentEncryptorId = whiteTeam.playerIds[0]
-    blackTeam.currentEncryptorId = blackTeam.playerIds[0]
-  }
-
-  const setNewRound = () => {
-    state.currentRound++
-    state.rounds.push(Round(state.currentRound))
   }
 
   const submitClues = (encryptorId, clues) => {
@@ -258,36 +106,30 @@ const Game = gameId => {
       return fail("Player is not the current encryptor.")
     }
 
-    const round = state.rounds.find(
-      round => round.roundId === state.currentRound
-    )
-    round.teamClues[team.name] = [...clues]
+    const currentRound = roundManager.currentRound()
+    currentRound.teamClues[team.name] = [...clues]
 
-    transitionPhase()
+    phaseManager.transition(players, teams)
 
     return success()
   }
 
   const submitInterceptGuess = (teamName, guess) => {
     const team = teams.find(team => team.name === teamName)
-    const round = state.rounds.find(
-      round => round.roundId === state.currentRound
-    )
-    round.teamInterceptGuesses[team.name] = [...guess]
+    const currentRound = roundManager.currentRound()
+    currentRound.teamInterceptGuesses[team.name] = [...guess]
 
-    transitionPhase()
+    phaseManager.transition(players, teams)
 
     return success()
   }
 
   const submitDecodeGuess = (teamName, guess) => {
     const team = teams.find(team => team.name === teamName)
-    const round = state.rounds.find(
-      round => round.roundId === state.currentRound
-    )
-    round.teamDecodeGuesses[team.name] = [...guess]
+    const currentRound = roundManager.currentRound()
+    currentRound.teamDecodeGuesses[team.name] = [...guess]
 
-    transitionPhase()
+    phaseManager.transition(players, teams)
 
     return success()
   }
@@ -298,83 +140,21 @@ const Game = gameId => {
       return fail("Player is not in the game.")
     }
 
-    const team = teams.find(team =>
-      team.playerIds.some(id => id === playerId)
-    )
+    const team = teams.find(team => team.playerIds.some(id => id === playerId))
     if (!team) {
       return fail("Player must be on a team to be ready for the next round.")
     }
 
-    const round = state.rounds.find(
-      round => round.roundId === state.currentRound
-    )
-    round.teamPlayersReadyForNextRound[team.name].push(playerId)
+    const currentRound = roundManager.currentRound()
+    currentRound.teamPlayersReadyForNextRound[team.name].push(playerId)
 
-    transitionPhase()
+    phaseManager.transition(players, teams)
 
     return success()
   }
 
-  const determineScore = () => {
-    const round = state.rounds.find(
-      round => round.roundId === state.currentRound
-    )
-
-    const whiteTeam = teams.find(team => team.name === "White")
-    const blackTeam = teams.find(team => team.name === "Black")
-
-    const whiteIntercepted = arraysAreEqual(
-      round.teamInterceptGuesses.White,
-      round.teamCodes.Black
-    )
-    const whiteMiscommunicated = !arraysAreEqual(
-      round.teamDecodeGuesses.White,
-      round.teamCodes.White
-    )
-    const blackIntercepted = arraysAreEqual(
-      round.teamInterceptGuesses.Black,
-      round.teamCodes.White
-    )
-    const balckMiscommunicated = !arraysAreEqual(
-      round.teamDecodeGuesses.Black,
-      round.teamCodes.Black
-    )
-
-    if (whiteIntercepted) {
-      whiteTeam.intercepts++
-    }
-
-    if (whiteMiscommunicated) {
-      whiteTeam.miscommunications++
-    }
-
-    if (blackIntercepted) {
-      blackTeam.intercepts++
-    }
-
-    if (balckMiscommunicated) {
-      blackTeam.miscommunications++
-    }
-
-    return (
-      whiteTeam.intercepts >= 2 ||
-      whiteTeam.miscommunications >= 2 ||
-      blackTeam.intercepts >= 2 ||
-      blackTeam.miscommunications >= 2
-    )
-  }
-
-  const arraysAreEqual = (a, b) => {
-    if (a.length !== b.length) return false
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false
-    }
-    return true
-  }
-
   return {
     gameId,
-    state,
     players,
     teams,
     joinGame,

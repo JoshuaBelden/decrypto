@@ -1,7 +1,19 @@
-import Game, { GAME_PHASE } from "../lib/game.js"
+import Game from "../lib/game.js"
+import PhaseManager, { GAME_PHASE } from "../lib/phaseManager.js"
+import RoundManager from "../lib/roundManager.js"
+
+const setupBasicGame = () => {
+  const roundManager = RoundManager()
+  const phaseManager = PhaseManager(roundManager)
+  const game = Game("game1", phaseManager, roundManager)
+
+  return { game, phaseManager, roundManager }
+}
 
 const setup4PlayerGame = () => {
-  const game = Game("game1")
+  const roundManager = RoundManager()
+  const phaseManager = PhaseManager(roundManager)
+  const game = Game("game1", phaseManager, roundManager)
 
   const playerId1 = "player1"
   const playerName1 = "Player One"
@@ -34,14 +46,14 @@ const setup4PlayerGame = () => {
   game.playerReady(playerId3, true)
   game.playerReady(playerId4, true)
 
-  return { game, playerId1, playerId2, playerId3, playerId4 }
+  return { game, phaseManager, roundManager, playerId1, playerId2, playerId3, playerId4 }
 }
 
 describe("Game", () => {
   describe("joinGame", () => {
     it("should add a player to the game", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -58,7 +70,7 @@ describe("Game", () => {
 
     it("should not add a player to the game if they are already in the game", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -76,7 +88,7 @@ describe("Game", () => {
   describe("joinTeam", () => {
     it("should add a player to a team", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -92,7 +104,7 @@ describe("Game", () => {
 
     it("should not add a player to a team if they are not in the game", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
 
       // ACT
@@ -104,7 +116,7 @@ describe("Game", () => {
 
     it("should not add a player to a team if the team does not exist", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -119,7 +131,7 @@ describe("Game", () => {
 
     it("should not add a player to a team if they are already on the team", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -135,7 +147,7 @@ describe("Game", () => {
 
     it("should allow a player to join the other team", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -155,7 +167,7 @@ describe("Game", () => {
   describe("playerReady", () => {
     it("should set a player as ready", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -172,7 +184,7 @@ describe("Game", () => {
 
     it("should not set a player as ready if they are not in the game", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
 
       // ACT
@@ -184,7 +196,7 @@ describe("Game", () => {
 
     it("should not allow a player to ready if they're not on a team", () => {
       // ARRANGE
-      const game = Game("game1")
+      const { game } = setupBasicGame()
       const playerId = "player1"
       const playerName = "Player One"
       const socket = { send: jest.fn() }
@@ -202,7 +214,7 @@ describe("Game", () => {
     describe("lobby to main_encrypt", () => {
       it("should transition to main_encrypt", () => {
         // ARRANGE
-        const game = Game("game1")
+        const { game, phaseManager } = setupBasicGame()
         const playerId1 = "player1"
         const playerName1 = "Player One"
         const socket1 = { send: jest.fn() }
@@ -235,7 +247,7 @@ describe("Game", () => {
 
         // ASSERT
         expect(result.success).toBe(true)
-        expect(game.state.phase).toBe(GAME_PHASE.MAIN_ENCRYPT)
+        expect(phaseManager.currentPhase()).toBe(GAME_PHASE.MAIN_ENCRYPT)
       })
 
       it("should have 4 keywords set per team", () => {
@@ -262,7 +274,7 @@ describe("Game", () => {
     describe("main_encrypt to main_intercept", () => {
       it("should transition to main_intercept", () => {
         // ARRANGE
-        const { game } = setup4PlayerGame()
+        const { game, phaseManager } = setup4PlayerGame()
 
         // ACT
         const whiteTeamEncryptorPlayer = game.players.find(
@@ -284,15 +296,14 @@ describe("Game", () => {
         ])
 
         // ASSERT
-        expect(game.state.phase).toBe(GAME_PHASE.MAIN_INTERCEPT)
+        expect(phaseManager.currentPhase()).toBe(GAME_PHASE.MAIN_INTERCEPT)
       })
     })
 
     describe("main_intercept to main_decode", () => {
       it("should transition to main_decode", () => {
         // ARRANGE
-        const { game, playerId1, playerId2, playerId3, playerId4 } =
-          setup4PlayerGame()
+        const { game, phaseManager } = setup4PlayerGame()
 
         const whiteTeamEncryptorPlayer = game.players.find(
           player => player.playerId === game.teams[0].currentEncryptorId
@@ -319,15 +330,14 @@ describe("Game", () => {
         game.submitInterceptGuess(team2.name, [3, 1, 2])
 
         // ASSERT
-        expect(game.state.phase).toBe(GAME_PHASE.MAIN_DECODE)
+        expect(phaseManager.currentPhase()).toBe(GAME_PHASE.MAIN_DECODE)
       })
     })
 
     describe("main_decode to main_reveal", () => {
       it("should transition to main_reveal", () => {
         // ARRANGE
-        const { game, playerId1, playerId2, playerId3, playerId4 } =
-          setup4PlayerGame()
+        const { game, phaseManager } = setup4PlayerGame()
 
         const whiteTeamEncryptorPlayer = game.players.find(
           player => player.playerId === game.teams[0].currentEncryptorId
@@ -357,15 +367,14 @@ describe("Game", () => {
         game.submitDecodeGuess(team2.name, [3, 1, 2])
 
         // ASSERT
-        expect(game.state.phase).toBe(GAME_PHASE.MAIN_REVEAL)
+        expect(phaseManager.currentPhase()).toBe(GAME_PHASE.MAIN_REVEAL)
       })
     })
 
     describe("main_reveal to main_encrypt", () => {
       it("should transition to main_encrypt", () => {
         // ARRANGE
-        const { game, playerId1, playerId2, playerId3, playerId4 } =
-          setup4PlayerGame()
+        const { game, phaseManager, roundManager, playerId1, playerId2, playerId3, playerId4 } = setup4PlayerGame()
 
         const whiteTeamEncryptorPlayer = game.players.find(
           player => player.playerId === game.teams[0].currentEncryptorId
@@ -399,7 +408,7 @@ describe("Game", () => {
         game.submitReadyForNextRound(playerId4)
 
         // ASSERT
-        expect(game.state.phase).toBe(GAME_PHASE.MAIN_ENCRYPT)
+        expect(phaseManager.currentPhase()).toBe(GAME_PHASE.MAIN_ENCRYPT)
       })
 
       it("should increment the round", () => {

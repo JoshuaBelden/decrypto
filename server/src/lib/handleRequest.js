@@ -1,18 +1,29 @@
+import RoundManager from "./roundManager.js"
+import PhaseManager from "./phaseManager.js"
 import Game from "./game.js"
 import { fail } from "./result.js"
 
-const REQUEST_TYPE = {
+export const REQUEST_TYPE = {
   JOIN_GAME: "joinGame",
   JOIN_TEAM: "joinTeam",
   PLAYER_READY: "playerReady",
   SUBMIT_CLUES: "submitClues",
+  SUBMIT_INTERCEPT_GUESS: "submitInterceptGuess",
+  SUBMIT_DECODE_GUESS: "submitDecodeGuess",
+  SUBMIT_READY_FOR_NEXT_ROUND: "submitReadyForNextRound",
 }
 
 const handleRequest = (request, socket, gameInstances) => {
   const gameId = requireField("gameId", request, socket)
-  const gameInstance = createGameInstance(gameInstances, gameId)
+  if (!gameId) return
+
   const playerId = requireField("playerId", request, socket)
+  if (!playerId) return
+  
   const playerName = requireField("playerName", request, socket)
+  if (!playerName) return
+  
+  const gameInstance = createGameInstance(gameInstances, gameId)
 
   let result
 
@@ -32,6 +43,19 @@ const handleRequest = (request, socket, gameInstances) => {
       const clues = requireField("clues", request, socket)
       result = gameInstance.submitClues(playerId, clues)
       break
+    case REQUEST_TYPE.SUBMIT_INTERCEPT_GUESS:
+      const interceptGuess = requireField("interceptGuess", request, socket)
+      if (!interceptGuess) return
+      result = gameInstance.submitInterceptGuess(playerId, interceptGuess)
+      break
+    case REQUEST_TYPE.SUBMIT_DECODE_GUESS:
+      const decodeGuess = requireField("decodeGuess", request, socket)
+      if (!decodeGuess) return
+      result = gameInstance.submitDecodeGuess(playerId, decodeGuess)
+      break
+    case REQUEST_TYPE.SUBMIT_READY_FOR_NEXT_ROUND:
+      result = gameInstance.submitReadyForNextRound(playerId)
+      break
     default:
       result = fail(
         !request.type
@@ -48,9 +72,14 @@ const handleRequest = (request, socket, gameInstances) => {
 }
 
 const createGameInstance = (gameInstances, gameId) => {
+  if (!gameInstances) throw new Error("gameInstances is required.")
+  if (!gameId) throw new Error("gameId is required.")
+
   if (gameInstances.has(gameId)) return gameInstances.get(gameId)
 
-  const gameInstance = Game(gameId)
+  const roundManager = RoundManager()
+  const phaseManager = PhaseManager(roundManager)
+  const gameInstance = Game(gameId, roundManager, phaseManager)
   gameInstances.set(gameId, gameInstance)
   return gameInstance
 }
