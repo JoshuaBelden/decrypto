@@ -4,6 +4,7 @@ import { REQUEST_TYPE, GAME_PHASE } from "./lib/constants"
 import Socket from "./lib/socket"
 import Join from "./components/join"
 import Lobby from "./components/lobby"
+import Round from "./components/round"
 
 const App = () => {
   const [connection, setConnection] = useState()
@@ -57,19 +58,34 @@ const App = () => {
       playerId,
       playerName,
     })
-    console.debug("[decrypto] game context set: ", { gameId, playerId, playerName })
+    console.debug("[decrypto] game context set: ", {
+      gameId,
+      playerId,
+      playerName,
+    })
   }
 
   const onJoinTeam = teamName => {
     const { gameId, playerId } = gameContext
     connection.send(REQUEST_TYPE.JOIN_TEAM, { gameId, playerId, teamName })
-    console.debug("[decrypto] join_team request sent: ", { gameId, playerId, teamName })
+    console.debug("[decrypto] join_team request sent: ", {
+      gameId,
+      playerId,
+      teamName,
+    })
   }
 
   const onPlayerReady = () => {
     const { gameId, playerId } = gameContext
-    connection.send(REQUEST_TYPE.PLAYER_READY, { gameId, playerId, ready: true })
-    console.debug("[decrypto] player_ready request sent: ", { gameId, playerId })
+    connection.send(REQUEST_TYPE.PLAYER_READY, {
+      gameId,
+      playerId,
+      ready: true,
+    })
+    console.debug("[decrypto] player_ready request sent: ", {
+      gameId,
+      playerId,
+    })
   }
 
   useEffect(() => {
@@ -105,8 +121,18 @@ const App = () => {
     <div className="app-container">
       {!gameInstance && <Join onJoin={onJoin} />}
       {gameInstance && gameInstance.currentPhase === GAME_PHASE.LOBBY && (
-        <Lobby gameContext={gameContext} gameInstance={gameInstance} onJoinTeam={onJoinTeam} onReady={onPlayerReady} />
+        <Lobby
+          gameContext={gameContext}
+          gameInstance={gameInstance}
+          onJoinTeam={onJoinTeam}
+          onReady={onPlayerReady}
+        />
       )}
+      {gameInstance &&
+        gameInstance.currentPhase !== GAME_PHASE.LOBBY &&
+        !gameInstance.currentPhase !== GAME_PHASE.OVER && (
+          <Round gameContext={gameContext} gameInstance={gameInstance} />
+        )}
 
       {connectionError && (
         <div className="app-container__error">
